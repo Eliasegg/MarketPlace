@@ -1,0 +1,4 @@
+name: MarketPlace
+version: '${project.version}'
+main: com.eliaseeg.marketplace.MarketPlace
+api-version: '1.20'
