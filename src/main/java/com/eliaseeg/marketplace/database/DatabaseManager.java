@@ -99,15 +99,16 @@ public class DatabaseManager {
         });
     }
 
-    public ItemListing getItemListing(UUID itemId, Consumer<ItemListing> callback) {
+    public void getItemListing(UUID itemId, Consumer<ItemListing> callback) {
         Bukkit.getScheduler().runTaskAsynchronously(MarketPlace.getInstance(), () -> {
             Document doc = itemListingsCollection.find(Filters.eq("itemId", itemId.toString())).first();
             ItemListing listing = doc != null ? ItemListing.fromDocument(doc) : null;
             Bukkit.getScheduler().runTask(MarketPlace.getInstance(), () -> callback.accept(listing));
         });
+
     }
 
-    public List<ItemListing> getAllItemListings(Consumer<List<ItemListing>> callback) {
+    public void getAllItemListings(Consumer<List<ItemListing>> callback) {
         Bukkit.getScheduler().runTaskAsynchronously(MarketPlace.getInstance(), () -> {
             List<ItemListing> listings = new ArrayList<>();
             itemListingsCollection.find().forEach(doc -> listings.add(ItemListing.fromDocument(doc)));

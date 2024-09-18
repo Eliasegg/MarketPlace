@@ -2,3 +2,28 @@ name: MarketPlace
 version: '${project.version}'
 main: com.eliaseeg.marketplace.MarketPlace
 api-version: '1.20'
+
+commands:
+  sell:
+    description: Lists the item in player's hand in the marketplace for sale
+    usage: /sell <price>
+    permission: marketplace.sell
+  marketplace:
+    description: Displays a list of all items currently for sale in the marketplace
+    usage: /marketplace
+    permission: marketplace.view
+  blackmarket:
+    description: Generates a new shop with discounted prices from random items
+    usage: /blackmarket
+    permission: marketplace.blackmarket
+
+permissions:
+  marketplace.sell:
+    description: Allows players to sell items in the marketplace
+    default: true
+  marketplace.view:
+    description: Allows players to view the marketplace
+    default: true
+  marketplace.blackmarket:
+    description: Allows players to access the black market
+    default: op

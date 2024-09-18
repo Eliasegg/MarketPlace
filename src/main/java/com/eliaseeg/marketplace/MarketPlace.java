@@ -2,6 +2,9 @@ package com.eliaseeg.marketplace;
 
 import com.eliaseeg.marketplace.database.DatabaseManager;
 import org.bukkit.plugin.java.JavaPlugin;
+import com.eliaseeg.marketplace.commands.SellCommand;
+import com.eliaseeg.marketplace.commands.MarketplaceCommand;
+import com.eliaseeg.marketplace.commands.BlackMarketCommand;
 
 public final class MarketPlace extends JavaPlugin {
 
@@ -13,9 +16,13 @@ public final class MarketPlace extends JavaPlugin {
         instance = this;
         saveDefaultConfig();
 
-        databaseManager = new DatabaseManager(this);
+        databaseManager = new DatabaseManager();
         databaseManager.connect();
         databaseManager.createDatabase();
+
+        this.getCommand("sell").setExecutor(new SellCommand());
+        this.getCommand("marketplace").setExecutor(new MarketplaceCommand());
+        this.getCommand("blackmarket").setExecutor(new BlackMarketCommand());
     }
 
     @Override
