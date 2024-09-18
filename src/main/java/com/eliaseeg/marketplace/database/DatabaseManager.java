@@ -14,9 +14,12 @@ import com.eliaseeg.marketplace.models.PlayerData;
 import com.eliaseeg.marketplace.models.ItemListing;
 import com.eliaseeg.marketplace.models.Transaction;
 
+import org.bukkit.Bukkit;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.function.Consumer;
 
 public class DatabaseManager {
 
@@ -80,39 +83,69 @@ public class DatabaseManager {
     }
 
     // ItemListing operations
-    public void saveItemListing(ItemListing itemListing) {
-        itemListingsCollection.replaceOne(
-            Filters.eq("itemId", itemListing.getItemId().toString()),
-            itemListing.toDocument(),
-            new ReplaceOptions().upsert(true)
-        );
+    public void saveItemListing(ItemListing itemListing, Consumer<Boolean> callback) {
+        Bukkit.getScheduler().runTaskAsynchronously(MarketPlace.getInstance(), () -> {
+            try {
+                itemListingsCollection.replaceOne(
+                    Filters.eq("itemId", itemListing.getItemId().toString()),
+                    itemListing.toDocument(),
+                    new ReplaceOptions().upsert(true)
+                );
+                Bukkit.getScheduler().runTask(MarketPlace.getInstance(), () -> callback.accept(true));
+            } catch (Exception e) {
+                MarketPlace.getInstance().getLogger().severe("Failed to save item listing: " + e.getMessage());
+                Bukkit.getScheduler().runTask(MarketPlace.getInstance(), () -> callback.accept(false));
+            }
+        });
     }
 
-    public ItemListing getItemListing(UUID itemId) {
-        Document doc = itemListingsCollection.find(Filters.eq("itemId", itemId.toString())).first();
-        return doc != null ? ItemListing.fromDocument(doc) : null;
+    public ItemListing getItemListing(UUID itemId, Consumer<ItemListing> callback) {
+        Bukkit.getScheduler().runTaskAsynchronously(MarketPlace.getInstance(), () -> {
+            Document doc = itemListingsCollection.find(Filters.eq("itemId", itemId.toString())).first();
+            ItemListing listing = doc != null ? ItemListing.fromDocument(doc) : null;
+            Bukkit.getScheduler().runTask(MarketPlace.getInstance(), () -> callback.accept(listing));
+        });
     }
 
-    public List<ItemListing> getAllItemListings() {
-        List<ItemListing> listings = new ArrayList<>();
-        itemListingsCollection.find().forEach(doc -> listings.add(ItemListing.fromDocument(doc)));
-        return listings;
+    public List<ItemListing> getAllItemListings(Consumer<List<ItemListing>> callback) {
+        Bukkit.getScheduler().runTaskAsynchronously(MarketPlace.getInstance(), () -> {
+            List<ItemListing> listings = new ArrayList<>();
+            itemListingsCollection.find().forEach(doc -> listings.add(ItemListing.fromDocument(doc)));
+            Bukkit.getScheduler().runTask(MarketPlace.getInstance(), () -> callback.accept(listings));
+        });
     }
 
-    public void removeItemListing(UUID itemId) {
-        itemListingsCollection.deleteOne(Filters.eq("itemId", itemId.toString()));
+    public void removeItemListing(UUID itemId, Consumer<Boolean> callback) {
+        Bukkit.getScheduler().runTaskAsynchronously(MarketPlace.getInstance(), () -> {
+            try {
+                itemListingsCollection.deleteOne(Filters.eq("itemId", itemId.toString()));
+                Bukkit.getScheduler().runTask(MarketPlace.getInstance(), () -> callback.accept(true));
+            } catch (Exception e) {
+                MarketPlace.getInstance().getLogger().severe("Failed to remove item listing: " + e.getMessage());
+                Bukkit.getScheduler().runTask(MarketPlace.getInstance(), () -> callback.accept(false));
+            }
+        });
     }
 
     // Transaction operations
-    public void saveTransaction(Transaction transaction) {
-        PlayerData buyerData = getPlayerData(transaction.getBuyerUUID());
-        PlayerData sellerData = getPlayerData(transaction.getSellerUUID());
+    public void saveTransaction(Transaction transaction, Consumer<Boolean> callback) {
+        Bukkit.getScheduler().runTaskAsynchronously(MarketPlace.getInstance(), () -> {
+            try {
+                PlayerData buyerData = getPlayerData(transaction.getBuyerUUID());
+                PlayerData sellerData = getPlayerData(transaction.getSellerUUID());
 
-        buyerData.addTransaction(transaction);
-        sellerData.addTransaction(transaction);
+                buyerData.addTransaction(transaction);
+                sellerData.addTransaction(transaction);
 
-        savePlayerData(buyerData);
-        savePlayerData(sellerData);
+                savePlayerData(buyerData);
+                savePlayerData(sellerData);
+
+                Bukkit.getScheduler().runTask(MarketPlace.getInstance(), () -> callback.accept(true));
+            } catch (Exception e) {
+                MarketPlace.getInstance().getLogger().severe("Failed to save transaction: " + e.getMessage());
+                Bukkit.getScheduler().runTask(MarketPlace.getInstance(), () -> callback.accept(false));
+            }
+        });
     }
 
     public List<Transaction> getPlayerTransactions(UUID playerUUID) {
