@@ -4,6 +4,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.inventory.Inventory;
 
 import java.util.HashMap;
@@ -27,14 +28,23 @@ public class InventoryGUIListener implements Listener {
         Player player = (Player) event.getWhoClicked();
         Inventory clickedInventory = event.getClickedInventory();
         
-        if (clickedInventory == null) return;
-        
         String inventoryTitle = event.getView().getTitle();
         InventoryGUI gui = activeGUIs.get(inventoryTitle);
         
         if (gui != null) {
             event.setCancelled(true);
-            gui.handleClick(player, event.getSlot());
+            if (clickedInventory != null && clickedInventory.equals(event.getView().getTopInventory())) {
+                gui.handleClick(player, event.getSlot());
+            }
+        }
+    }
+
+    @EventHandler
+    public void onInventoryDrag(InventoryDragEvent event) {
+        if (!(event.getWhoClicked() instanceof Player)) return;
+        String inventoryTitle = event.getView().getTitle();
+        if (activeGUIs.containsKey(inventoryTitle)) {
+            event.setCancelled(true);
         }
     }
 }
