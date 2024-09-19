@@ -3,6 +3,7 @@ package com.eliaseeg.marketplace;
 import com.eliaseeg.marketplace.managers.DatabaseManager;
 import com.eliaseeg.marketplace.utils.inventorygui.InventoryGUIListener;
 import com.eliaseeg.marketplace.utils.DiscordWebhook;
+import com.eliaseeg.marketplace.utils.MessageUtils;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.plugin.RegisteredServiceProvider;
 import net.milkbowl.vault.economy.Economy;
@@ -21,6 +22,8 @@ public final class MarketPlace extends JavaPlugin {
     public void onEnable() {
         instance = this;
         saveDefaultConfig();
+
+        MessageUtils.init(this);
 
         if (!setupEconomy()) {
             getLogger().severe("Disabled due to no Vault dependency found!");

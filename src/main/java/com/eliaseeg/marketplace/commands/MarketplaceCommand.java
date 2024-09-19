@@ -6,6 +6,7 @@ import com.eliaseeg.marketplace.models.Transaction;
 import com.eliaseeg.marketplace.utils.inventorygui.InventoryGUI;
 import com.eliaseeg.marketplace.utils.inventorygui.InventoryGUIListener;
 import com.eliaseeg.marketplace.managers.CooldownManager;
+import com.eliaseeg.marketplace.utils.MessageUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.command.Command;
@@ -25,14 +26,14 @@ public class MarketplaceCommand implements CommandExecutor {
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (!(sender instanceof Player)) {
-            sender.sendMessage("This command can only be used by players.");
+            sender.sendMessage(MessageUtils.getMessage("player_only"));
             return true;
         }
 
         Player player = (Player) sender;
 
         if (!player.hasPermission("marketplace.view")) {
-            player.sendMessage("You don't have permission to use this command.");
+            MessageUtils.sendMessage(player, "no_permission");
             return true;
         }
 
@@ -43,20 +44,16 @@ public class MarketplaceCommand implements CommandExecutor {
 
     private void openMarketplace(Player player) {
         List<ItemListing> listings = MarketPlace.getInstance().getItemMarketplaceManager().getAllListings();
-        InventoryGUI gui = new InventoryGUI("Marketplace", 6, false);
-        InventoryGUIListener.registerGUI("Marketplace", gui);
+        InventoryGUI gui = new InventoryGUI(MessageUtils.getMessage("marketplace_title"), 6, false);
+        InventoryGUIListener.registerGUI(MessageUtils.getMessage("marketplace_title"), gui);
 
         for (ItemListing listing : listings) {
             ItemStack displayItem = listing.getItem().clone();
             ItemMeta meta = displayItem.getItemMeta();
             if (meta != null) {
-                List<String> lore = meta.getLore() != null ? meta.getLore() : new ArrayList<>();
-                lore.add("");
-                lore.add("----------------");
-                lore.add("Price: " + listing.getPrice());
-                lore.add("Seller: " + Bukkit.getOfflinePlayer(listing.getSellerUUID()).getName());
-                lore.add("----------------");
-                lore.add("Click to purchase");
+                List<String> lore = MessageUtils.getMessageList("item_lore.marketplace",
+                    "price", listing.getPrice(),
+                    "seller", Bukkit.getOfflinePlayer(listing.getSellerUUID()).getName());
                 meta.setLore(lore);
                 displayItem.setItemMeta(meta);
             }
@@ -68,7 +65,7 @@ public class MarketplaceCommand implements CommandExecutor {
 
     private void openConfirmationGUI(Player player, ItemListing listing) {
         if (player.getUniqueId().equals(listing.getSellerUUID())) {
-            player.sendMessage("You cannot purchase your own item.");
+            MessageUtils.sendMessage(player, "cannot_buy_own_item");
             player.closeInventory();
             return;
         }
@@ -77,22 +74,22 @@ public class MarketplaceCommand implements CommandExecutor {
         double price = listing.getPrice();
 
         if (!economy.has(player, price)) {
-            player.sendMessage("You don't have enough money to purchase this item.");
+            MessageUtils.sendMessage(player, "not_enough_money");
             player.closeInventory();
             return;
         }
 
-        InventoryGUI confirmGui = new InventoryGUI("Confirm Purchase", 3, true);
-        InventoryGUIListener.registerGUI("Confirm Purchase", confirmGui);
+        InventoryGUI confirmGui = new InventoryGUI(MessageUtils.getMessage("confirm_purchase_title"), 3, true);
+        InventoryGUIListener.registerGUI(MessageUtils.getMessage("confirm_purchase_title"), confirmGui);
 
         ItemStack confirmItem = new ItemStack(Material.GREEN_WOOL);
         ItemMeta confirmMeta = confirmItem.getItemMeta();
-        confirmMeta.setDisplayName("Confirm Purchase");
+        confirmMeta.setDisplayName(MessageUtils.getMessage("confirm_purchase"));
         confirmItem.setItemMeta(confirmMeta);
 
         ItemStack cancelItem = new ItemStack(Material.RED_WOOL);
         ItemMeta cancelMeta = cancelItem.getItemMeta();
-        cancelMeta.setDisplayName("Cancel Purchase");
+        cancelMeta.setDisplayName(MessageUtils.getMessage("cancel_purchase"));
         cancelItem.setItemMeta(cancelMeta);
 
         confirmGui.setItem(11, confirmItem, p -> purchaseItem(p, listing));
@@ -103,7 +100,7 @@ public class MarketplaceCommand implements CommandExecutor {
 
     private void purchaseItem(Player player, ItemListing listing) {
         if (!CooldownManager.checkCooldown(player.getUniqueId())) {
-            player.sendMessage("Please wait before making another purchase.");
+            MessageUtils.sendMessage(player, "purchase_cooldown");
             return;
         }
 
@@ -111,7 +108,7 @@ public class MarketplaceCommand implements CommandExecutor {
         double price = listing.getPrice();
 
         if (!economy.has(player, price)) {
-            player.sendMessage("You don't have enough money to purchase this item.");
+            MessageUtils.sendMessage(player, "not_enough_money");
             player.closeInventory();
             return;
         }
@@ -127,19 +124,20 @@ public class MarketplaceCommand implements CommandExecutor {
                 Transaction transaction = new Transaction(player.getUniqueId(), listing.getSellerUUID(), listing.getItem(), price, false);
                 MarketPlace.getInstance().getDatabaseManager().saveTransaction(transaction, transactionSuccess -> {
                     if (transactionSuccess) {
-                        player.sendMessage("You have successfully purchased the item for " + price);
-                        MarketPlace.getInstance().getDiscordWebhook().sendMessage("Player " + player.getName() + " purchased " + listing.getItem().getType() + " for " + price);
+                        String itemName = listing.getItem().hasItemMeta() ? listing.getItem().getItemMeta().getDisplayName() : listing.getItem().getType().name();
+                        MessageUtils.sendMessage(player, "purchase_success", "price", price);
+                        MarketPlace.getInstance().getDiscordWebhook().sendMessage(MessageUtils.getMessage("discord_messages.purchase", "player", player.getName(), "item", itemName, "price", price));
                         
                         Player sellerPlayer = seller.getPlayer();
                         if (sellerPlayer != null && sellerPlayer.isOnline()) {
-                            sellerPlayer.sendMessage("Your item " + listing.getItem().getType() + " has been sold for " + price);
+                            MessageUtils.sendMessage(sellerPlayer, "item_sold", "item", itemName, "price", price);
                         }
                     } else {
-                        player.sendMessage("Purchase successful, but failed to save transaction history.");
+                        MessageUtils.sendMessage(player, "transaction_save_failed");
                     }
                 });
             } else {
-                player.sendMessage("Failed to purchase the item. It may have been already sold.");
+                MessageUtils.sendMessage(player, "purchase_failed");
             }
             openMarketplace(player);
         });

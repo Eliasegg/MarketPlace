@@ -1,3 +1,54 @@
 database:
   uri: "mongodb://localhost:27017"
   name: "marketplace"
+
+discord:
+  webhook_url: ""
+
+purchase_cooldown: 2000  # Cooldown time in milliseconds
+
+messages:
+  player_only: "&cThis command can only be used by players."
+  no_permission: "&cYou don't have permission to use this command."
+  usage_sell: "&cUsage: /sell <price>"
+  invalid_price: "&cInvalid price. Please enter a valid number."
+  must_hold_item: "&cYou must be holding an item to sell."
+  listing_item: "&7Listing your item for sale..."
+  item_listed: "&aYour item has been listed in the marketplace for %price%."
+  listing_failed: "&cFailed to list your item. Please try again later."
+  cannot_buy_own_item: "&cYou cannot purchase your own item."
+  not_enough_money: "&cYou don't have enough money to purchase this item."
+  purchase_cooldown: "&cPlease wait before making another purchase."
+  purchase_success: "&aYou have successfully purchased the item for %price%."
+  purchase_failed: "&cFailed to purchase the item. It may have been already sold."
+  transaction_save_failed: "&ePurchase successful, but failed to save transaction history."
+  item_sold: "&aYour item %item% has been sold for %price%."
+  black_market_item_sold: "&aYour item %item% has been sold on the Black Market. You've been reimbursed %price%."
+  no_transactions: "&cYou have no transactions in your history."
+  confirm_purchase: "&aConfirm Purchase"
+  cancel_purchase: "&cCancel Purchase"
+  marketplace_title: "Marketplace"
+  confirm_purchase_title: "Confirm Purchase"
+  transaction_history_title: "Transaction History"
+  discord_messages:
+    purchase: "Player %player% purchased %item% for %price%"
+    black_market_purchase: "Player %player% purchased %item% from the Black Market for %price%"
+
+item_lore:
+  marketplace:
+    - "&7----------------"
+    - "&7Price: &6%price%"
+    - "&7Seller: &e%seller%"
+    - "&7----------------"
+    - "&aClick to purchase"
+  black_market:
+    - "&7Discounted Price: &6%discounted_price%"
+    - "&7Original Price: &c%original_price%"
+    - "&aClick to purchase"
+  transaction:
+    - ""
+    - "&7----------------"
+    - "&7Price: &6%price%"
+    - "&7Type: &e%type%"
+    - "&7Date: &e%date%"
+    - "%black_market%"

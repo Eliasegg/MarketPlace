@@ -6,6 +6,7 @@ import com.eliaseeg.marketplace.models.Transaction;
 import com.eliaseeg.marketplace.utils.inventorygui.InventoryGUI;
 import com.eliaseeg.marketplace.utils.inventorygui.InventoryGUIListener;
 import com.eliaseeg.marketplace.managers.CooldownManager;
+import com.eliaseeg.marketplace.utils.MessageUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.command.Command;
@@ -25,14 +26,14 @@ public class BlackMarketCommand implements CommandExecutor {
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (!(sender instanceof Player)) {
-            sender.sendMessage("This command can only be used by players.");
+            sender.sendMessage(MessageUtils.getMessage("player_only"));
             return true;
         }
 
         Player player = (Player) sender;
 
         if (!player.hasPermission("marketplace.blackmarket")) {
-            player.sendMessage("You don't have permission to use this command.");
+            MessageUtils.sendMessage(player, "no_permission");
             return true;
         }
 
@@ -51,10 +52,9 @@ public class BlackMarketCommand implements CommandExecutor {
             ItemStack displayItem = discounted.getItem().clone();
             ItemMeta meta = displayItem.getItemMeta();
             if (meta != null) {
-                List<String> lore = meta.getLore() != null ? meta.getLore() : new ArrayList<>();
-                lore.add("Discounted Price: " + discounted.getPrice());
-                lore.add("Original Price: " + original.getPrice());
-                lore.add("Click to purchase");
+                List<String> lore = MessageUtils.getMessageList("item_lore.black_market",
+                    "discounted_price", discounted.getPrice(),
+                    "original_price", original.getPrice());
                 meta.setLore(lore);
                 displayItem.setItemMeta(meta);
             }
@@ -66,7 +66,8 @@ public class BlackMarketCommand implements CommandExecutor {
 
     private void openConfirmationGUI(Player player, ItemListing listing) {
         if (player.getUniqueId().equals(listing.getSellerUUID())) {
-            player.sendMessage("You cannot purchase your own item.");
+            MessageUtils.sendMessage(player, "cannot_buy_own_item");
+            player.closeInventory();
             return;
         }
 
@@ -74,7 +75,7 @@ public class BlackMarketCommand implements CommandExecutor {
         double discountedPrice = listing.getPrice();
 
         if (!economy.has(player, discountedPrice)) {
-            player.sendMessage("You don't have enough money to purchase this item.");
+            MessageUtils.sendMessage(player, "not_enough_money");
             player.closeInventory();
             return;
         }
@@ -100,8 +101,7 @@ public class BlackMarketCommand implements CommandExecutor {
 
     private void purchaseItem(Player player, ItemListing listing) {
         if (!CooldownManager.checkCooldown(player.getUniqueId())) {
-            player.sendMessage("Please wait before making another purchase.");
-            player.closeInventory();
+            MessageUtils.sendMessage(player, "purchase_cooldown");
             return;
         }
 
@@ -110,7 +110,7 @@ public class BlackMarketCommand implements CommandExecutor {
         double originalPrice = discountedPrice * 2;
 
         if (!economy.has(player, discountedPrice)) {
-            player.sendMessage("You don't have enough money to purchase this item.");
+            MessageUtils.sendMessage(player, "not_enough_money");
             player.closeInventory();
             return;
         }
@@ -126,19 +126,20 @@ public class BlackMarketCommand implements CommandExecutor {
                 Transaction transaction = new Transaction(player.getUniqueId(), listing.getSellerUUID(), listing.getItem(), discountedPrice, true);
                 MarketPlace.getInstance().getDatabaseManager().saveTransaction(transaction, transactionSuccess -> {
                     if (transactionSuccess) {
-                        player.sendMessage("You have successfully purchased the item for " + discountedPrice);
-                        MarketPlace.getInstance().getDiscordWebhook().sendMessage("Player " + player.getName() + " purchased " + listing.getItem().getType() + " from the Black Market for " + discountedPrice);
+                        String itemName = listing.getItem().hasItemMeta() ? listing.getItem().getItemMeta().getDisplayName() : listing.getItem().getType().name();
+                        MessageUtils.sendMessage(player, "purchase_success", "price", discountedPrice);
+                        MarketPlace.getInstance().getDiscordWebhook().sendMessage(MessageUtils.getMessage("discord_messages.black_market_purchase", "player", player.getName(), "item", itemName, "price", discountedPrice));
 
                         Player sellerPlayer = seller.getPlayer();
                         if (sellerPlayer != null && sellerPlayer.isOnline()) {
-                            sellerPlayer.sendMessage("Your item " + listing.getItem().getType() + " has been sold on the Black Market. You've been reimbursed " + originalPrice);
+                            MessageUtils.sendMessage(sellerPlayer, "black_market_item_sold", "item", itemName, "price", originalPrice);
                         }
                     } else {
-                        player.sendMessage("Purchase successful, but failed to save transaction history.");
+                        MessageUtils.sendMessage(player, "transaction_save_failed");
                     }
                 });
             } else {
-                player.sendMessage("Failed to purchase the item. It may have been already sold.");
+                MessageUtils.sendMessage(player, "purchase_failed");
             }
             openBlackMarket(player);
         });

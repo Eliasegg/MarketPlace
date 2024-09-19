@@ -18,6 +18,10 @@ public class DiscordWebhook {
     }
 
     public void sendMessage(String content) {
+        if (webhookUrl == null || webhookUrl.isEmpty()) {
+            return;
+        }
+
         Bukkit.getScheduler().runTaskAsynchronously(MarketPlace.getInstance(), () -> {
             try {
                 JsonObject json = new JsonObject();
