@@ -37,7 +37,7 @@ public class TransactionsCommand implements CommandExecutor {
     }
 
     private void displayTransactions(Player player, List<Transaction> transactions) {
-        InventoryGUI gui = new InventoryGUI("Transaction History", 6);
+        InventoryGUI gui = new InventoryGUI("Transaction History", 6, false);
         InventoryGUIListener.registerGUI("Transaction History", gui);
 
         if (transactions.isEmpty()) {
@@ -45,8 +45,7 @@ public class TransactionsCommand implements CommandExecutor {
             return;
         }
 
-        for (int i = 0; i < transactions.size(); i++) {
-            Transaction transaction = transactions.get(i);
+        for (Transaction transaction : transactions) {
             ItemStack displayItem = transaction.getItem().clone();
             ItemMeta meta = displayItem.getItemMeta();
             if (meta != null) {
@@ -54,16 +53,17 @@ public class TransactionsCommand implements CommandExecutor {
                 lore.add("");
                 lore.add("----------------");
                 lore.add("Price: " + transaction.getPrice());
-                lore.add("Type: " + (transaction.getBuyerUUID().equals(player.getUniqueId()) ? "Bought" : "Sold"));
+                lore.add("Type: " + (transaction.isBuyerTransaction(player.getUniqueId()) ? "Bought" : "Sold"));
                 lore.add("Date: " + transaction.getTransactionTime());
-                lore.add("Black Market: " + (transaction.isBlackMarket() ? "Yes" : "No"));
-                lore.add("----------------");
+                if (transaction.isBlackMarket()) {
+                    lore.add("Black Market Transaction");
+                }
                 meta.setLore(lore);
                 displayItem.setItemMeta(meta);
             }
-            gui.setItem(i, displayItem, null);
+            gui.addItem(displayItem, null);
         }
 
-        gui.open(player);
+        player.openInventory(gui.getInventory());
     }
 }

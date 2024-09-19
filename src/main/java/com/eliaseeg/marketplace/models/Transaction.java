@@ -54,6 +54,10 @@ public class Transaction {
         return isBlackMarket;
     }
 
+    public boolean isBuyerTransaction(UUID playerUUID) {
+        return buyerUUID.equals(playerUUID);
+    }
+
     public Document toDocument() {
         return new Document("transactionId", transactionId.toString())
                 .append("buyerUUID", buyerUUID.toString())

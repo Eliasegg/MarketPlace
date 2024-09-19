@@ -5,6 +5,7 @@ import com.eliaseeg.marketplace.models.ItemListing;
 import com.eliaseeg.marketplace.models.Transaction;
 import com.eliaseeg.marketplace.utils.inventorygui.InventoryGUI;
 import com.eliaseeg.marketplace.utils.inventorygui.InventoryGUIListener;
+import com.eliaseeg.marketplace.managers.CooldownManager;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.command.Command;
@@ -42,7 +43,7 @@ public class MarketplaceCommand implements CommandExecutor {
 
     private void openMarketplace(Player player) {
         List<ItemListing> listings = MarketPlace.getInstance().getItemMarketplaceManager().getAllListings();
-        InventoryGUI gui = new InventoryGUI("Marketplace", 6);
+        InventoryGUI gui = new InventoryGUI("Marketplace", 6, false);
         InventoryGUIListener.registerGUI("Marketplace", gui);
 
         for (ItemListing listing : listings) {
@@ -62,7 +63,7 @@ public class MarketplaceCommand implements CommandExecutor {
             gui.addItem(displayItem, p -> openConfirmationGUI(p, listing));
         }
 
-        gui.open(player);
+        player.openInventory(gui.getInventory());
     }
 
     private void openConfirmationGUI(Player player, ItemListing listing) {
@@ -71,10 +72,11 @@ public class MarketplaceCommand implements CommandExecutor {
 
         if (!economy.has(player, price)) {
             player.sendMessage("You don't have enough money to purchase this item.");
+            player.closeInventory();
             return;
         }
 
-        InventoryGUI confirmGui = new InventoryGUI("Confirm Purchase", 3);
+        InventoryGUI confirmGui = new InventoryGUI("Confirm Purchase", 3, true);
         InventoryGUIListener.registerGUI("Confirm Purchase", confirmGui);
 
         ItemStack confirmItem = new ItemStack(Material.GREEN_WOOL);
@@ -90,15 +92,21 @@ public class MarketplaceCommand implements CommandExecutor {
         confirmGui.setItem(11, confirmItem, p -> purchaseItem(p, listing));
         confirmGui.setItem(15, cancelItem, p -> p.closeInventory());
 
-        confirmGui.open(player);
+        player.openInventory(confirmGui.getInventory());
     }
 
     private void purchaseItem(Player player, ItemListing listing) {
+        if (!CooldownManager.checkCooldown(player.getUniqueId())) {
+            player.sendMessage("Please wait before making another purchase.");
+            return;
+        }
+
         Economy economy = MarketPlace.getInstance().getEconomy();
         double price = listing.getPrice();
 
         if (!economy.has(player, price)) {
             player.sendMessage("You don't have enough money to purchase this item.");
+            player.closeInventory();
             return;
         }
 

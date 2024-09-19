@@ -5,6 +5,7 @@ import com.eliaseeg.marketplace.models.ItemListing;
 import com.eliaseeg.marketplace.models.Transaction;
 import com.eliaseeg.marketplace.utils.inventorygui.InventoryGUI;
 import com.eliaseeg.marketplace.utils.inventorygui.InventoryGUIListener;
+import com.eliaseeg.marketplace.managers.CooldownManager;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.command.Command;
@@ -42,7 +43,7 @@ public class BlackMarketCommand implements CommandExecutor {
 
     private void openBlackMarket(Player player) {
         List<ItemListing> blackMarketListings = MarketPlace.getInstance().getItemMarketplaceManager().getBlackMarketListings(5);
-        InventoryGUI gui = new InventoryGUI("Black Market", 3);
+        InventoryGUI gui = new InventoryGUI("Black Market", 3, false);
         InventoryGUIListener.registerGUI("Black Market", gui);
 
         for (ItemListing original : blackMarketListings) {
@@ -60,7 +61,7 @@ public class BlackMarketCommand implements CommandExecutor {
             gui.addItem(displayItem, p -> openConfirmationGUI(p, discounted));
         }
 
-        gui.open(player);
+        player.openInventory(gui.getInventory());
     }
 
     private void openConfirmationGUI(Player player, ItemListing listing) {
@@ -69,10 +70,11 @@ public class BlackMarketCommand implements CommandExecutor {
 
         if (!economy.has(player, discountedPrice)) {
             player.sendMessage("You don't have enough money to purchase this item.");
+            player.closeInventory();
             return;
         }
 
-        InventoryGUI confirmGui = new InventoryGUI("Confirm Black Market Purchase", 3);
+        InventoryGUI confirmGui = new InventoryGUI("Confirm Black Market Purchase", 3, true);
         InventoryGUIListener.registerGUI("Confirm Black Market Purchase", confirmGui);
 
         ItemStack confirmItem = new ItemStack(Material.GREEN_WOOL);
@@ -88,16 +90,22 @@ public class BlackMarketCommand implements CommandExecutor {
         confirmGui.setItem(11, confirmItem, p -> purchaseItem(p, listing));
         confirmGui.setItem(15, cancelItem, p -> p.closeInventory());
 
-        confirmGui.open(player);
+        player.openInventory(confirmGui.getInventory());
     }
 
     private void purchaseItem(Player player, ItemListing listing) {
+        if (!CooldownManager.checkCooldown(player.getUniqueId())) {
+            player.sendMessage("Please wait before making another purchase.");
+            return;
+        }
+
         Economy economy = MarketPlace.getInstance().getEconomy();
         double discountedPrice = listing.getPrice();
         double originalPrice = discountedPrice * 2;
 
         if (!economy.has(player, discountedPrice)) {
             player.sendMessage("You don't have enough money to purchase this item.");
+            player.closeInventory();
             return;
         }
 
