@@ -30,6 +30,7 @@ messages:
   marketplace_title: "Marketplace"
   confirm_purchase_title: "Confirm Purchase"
   transaction_history_title: "Transaction History"
+  inventory_full_item_dropped: "Your inventory was full. The item has been dropped on the ground."
   discord_messages:
     purchase: "Player %player% purchased %item% for %price%"
     black_market_purchase: "Player %player% purchased %item% from the Black Market for %price%"

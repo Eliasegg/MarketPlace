@@ -20,6 +20,7 @@ import org.bukkit.OfflinePlayer;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.HashMap;
 
 public class BlackMarketCommand implements CommandExecutor {
 
@@ -122,7 +123,12 @@ public class BlackMarketCommand implements CommandExecutor {
                 OfflinePlayer seller = Bukkit.getOfflinePlayer(listing.getSellerUUID());
                 economy.depositPlayer(seller, originalPrice); // 2x reimbursement
 
-                player.getInventory().addItem(listing.getItem());
+                HashMap<Integer, ItemStack> leftover = player.getInventory().addItem(listing.getItem());
+                if (!leftover.isEmpty()) {
+                    player.getWorld().dropItemNaturally(player.getLocation(), leftover.get(0));
+                    MessageUtils.sendMessage(player, "inventory_full_item_dropped");
+                }
+
                 Transaction transaction = new Transaction(player.getUniqueId(), listing.getSellerUUID(), listing.getItem(), discountedPrice, true);
                 MarketPlace.getInstance().getDatabaseManager().saveTransaction(transaction, transactionSuccess -> {
                     if (transactionSuccess) {

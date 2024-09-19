@@ -19,6 +19,7 @@ import net.milkbowl.vault.economy.Economy;
 import org.bukkit.OfflinePlayer;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 public class MarketplaceCommand implements CommandExecutor {
@@ -120,7 +121,12 @@ public class MarketplaceCommand implements CommandExecutor {
                 OfflinePlayer seller = Bukkit.getOfflinePlayer(listing.getSellerUUID());
                 economy.depositPlayer(seller, price);
 
-                player.getInventory().addItem(listing.getItem());
+                HashMap<Integer, ItemStack> leftover = player.getInventory().addItem(listing.getItem());
+                if (!leftover.isEmpty()) {
+                    player.getWorld().dropItemNaturally(player.getLocation(), leftover.get(0));
+                    MessageUtils.sendMessage(player, "inventory_full_item_dropped");
+                }
+
                 Transaction transaction = new Transaction(player.getUniqueId(), listing.getSellerUUID(), listing.getItem(), price, false);
                 MarketPlace.getInstance().getDatabaseManager().saveTransaction(transaction, transactionSuccess -> {
                     if (transactionSuccess) {
