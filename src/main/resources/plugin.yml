@@ -2,6 +2,7 @@ name: MarketPlace
 version: '${project.version}'
 main: com.eliaseeg.marketplace.MarketPlace
 api-version: '1.20'
+depend: [Vault]
 
 commands:
   sell:
@@ -16,6 +17,10 @@ commands:
     description: Generates a new shop with discounted prices from random items
     usage: /blackmarket
     permission: marketplace.blackmarket
+  transactions:
+    description: Displays the player's transaction history
+    usage: /transactions
+    permission: marketplace.history
 
 permissions:
   marketplace.sell:
@@ -27,3 +32,6 @@ permissions:
   marketplace.blackmarket:
     description: Allows players to access the black market
     default: op
+  marketplace.history:
+    description: Allows players to view their transaction history
+    default: true

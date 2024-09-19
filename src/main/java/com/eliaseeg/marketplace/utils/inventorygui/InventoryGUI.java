@@ -74,10 +74,12 @@ public class InventoryGUI {
         if (!pages.isEmpty()) {
             page.setItem(rows * 9 - 9, createNavigationItem(Material.ARROW, "Previous Page"));
         }
-        page.setItem(rows * 9 - 1, createNavigationItem(Material.ARROW, "Next Page"));
+        if (!title.startsWith("Confirm")) {
+            page.setItem(rows * 9 - 1, createNavigationItem(Material.ARROW, "Next Page"));
+        }
         pages.add(page);
         
-        if (pages.size() > 1) {
+        if (pages.size() > 1 && !title.startsWith("Confirm")) {
             Inventory previousPage = pages.get(pages.size() - 2);
             previousPage.setItem(rows * 9 - 1, createNavigationItem(Material.ARROW, "Next Page"));
         }
