@@ -16,84 +16,92 @@ public class InventoryGUI {
 
     private final String title;
     private final int rows;
-    private final List<Inventory> pages;
+    private final Inventory inventory;
     private final Map<Integer, ClickAction> actions;
+    private final boolean isConfirmationGUI;
+    private final List<ItemStack> items;
+    private int currentPage;
 
-    public InventoryGUI(String title, int rows) {
+    public InventoryGUI(String title, int rows, boolean isConfirmationGUI) {
         this.title = title;
         this.rows = Math.min(6, Math.max(1, rows));
-        this.pages = new ArrayList<>();
+        this.inventory = Bukkit.createInventory(null, this.rows * 9, title);
         this.actions = new HashMap<>();
-        addPage();
+        this.isConfirmationGUI = isConfirmationGUI;
+        this.items = new ArrayList<>();
+        this.currentPage = 0;
+        
+        if (!isConfirmationGUI) {
+            fillBottomRow();
+        }
     }
 
     public void addItem(ItemStack item, ClickAction action) {
-        Inventory currentPage = getCurrentPage();
-        int firstEmpty = currentPage.firstEmpty();
-        if (firstEmpty == -1 || firstEmpty >= (rows - 1) * 9) {
-            addPage();
-            currentPage = getCurrentPage();
-            firstEmpty = currentPage.firstEmpty();
-        }
-        currentPage.setItem(firstEmpty, item);
+        items.add(item);
         if (action != null) {
-            int globalSlot = (pages.size() - 1) * ((rows - 1) * 9) + firstEmpty;
-            actions.put(globalSlot, action);
+            actions.put(items.size() - 1, action);
         }
+        updateInventory();
     }
 
     public void setItem(int slot, ItemStack item, ClickAction action) {
-        int page = slot / ((rows - 1) * 9);
-        int pageSlot = slot % ((rows - 1) * 9);
-        while (pages.size() <= page) {
-            addPage();
+        while (items.size() <= slot) {
+            items.add(null);
         }
-        pages.get(page).setItem(pageSlot, item);
+        items.set(slot, item);
         if (action != null) {
             actions.put(slot, action);
         }
+        updateInventory();
     }
 
-    public void open(Player player) {
-        player.openInventory(pages.get(0));
+    public void refresh(Player player) {
+        updateInventory();
+        player.getOpenInventory().getTopInventory().setContents(inventory.getContents());
     }
 
-    public void handleClick(Player player, int slot, Inventory clickedInventory) {
-        int page = pages.indexOf(clickedInventory);
-        if (page == -1) return;
-
-        if (slot >= (rows - 1) * 9) {
-            if (slot == rows * 9 - 9 && page > 0) {
-                player.openInventory(pages.get(page - 1));
-            } else if (slot == rows * 9 - 1 && page < pages.size() - 1) {
-                player.openInventory(pages.get(page + 1));
+    public void handleClick(Player player, int slot) {
+        if (!isConfirmationGUI && slot >= (rows - 1) * 9) {
+            if (slot == rows * 9 - 9 && currentPage > 0) {
+                currentPage--;
+                updateInventory();
+                player.getOpenInventory().getTopInventory().setContents(inventory.getContents());
+            } else if (slot == rows * 9 - 1 && (currentPage + 1) * ((rows - 1) * 9) < items.size()) {
+                currentPage++;
+                updateInventory();
+                player.getOpenInventory().getTopInventory().setContents(inventory.getContents());
             }
             return;
         }
 
-        int globalSlot = page * ((rows - 1) * 9) + slot;
+        int globalSlot = currentPage * ((rows - 1) * 9) + slot;
         ClickAction action = actions.get(globalSlot);
         if (action != null) {
             action.onClick(player);
         }
     }
 
-    private void addPage() {
-        Inventory page = Bukkit.createInventory(null, rows * 9, title + " - Page " + (pages.size() + 1));
-        fillBottomRow(page);
-        if (!pages.isEmpty()) {
-            page.setItem(rows * 9 - 9, createNavigationItem(Material.ARROW, "Previous Page"));
-        }
-        page.setItem(rows * 9 - 1, createNavigationItem(Material.ARROW, "Next Page"));
-        pages.add(page);
+    private void updateInventory() {
+        inventory.clear();
+        int startIndex = currentPage * ((rows - 1) * 9);
+        int endIndex = Math.min(startIndex + ((rows - 1) * 9), items.size());
         
-        if (pages.size() > 1) {
-            Inventory previousPage = pages.get(pages.size() - 2);
-            previousPage.setItem(rows * 9 - 1, createNavigationItem(Material.ARROW, "Next Page"));
+        for (int i = startIndex; i < endIndex; i++) {
+            inventory.setItem(i - startIndex, items.get(i));
+        }
+
+        if (!isConfirmationGUI) {
+            fillBottomRow();
+            if (currentPage > 0) {
+                inventory.setItem(rows * 9 - 9, createNavigationItem(Material.ARROW, "Previous Page"));
+            }
+            if ((currentPage + 1) * ((rows - 1) * 9) < items.size()) {
+                inventory.setItem(rows * 9 - 1, createNavigationItem(Material.ARROW, "Next Page"));
+            }
         }
     }
 
-    private void fillBottomRow(Inventory inventory) {
+    private void fillBottomRow() {
         ItemStack filler = new ItemStack(Material.WHITE_STAINED_GLASS_PANE);
         ItemMeta meta = filler.getItemMeta();
         if (meta != null) {
@@ -105,10 +113,6 @@ public class InventoryGUI {
         }
     }
 
-    private Inventory getCurrentPage() {
-        return pages.get(pages.size() - 1);
-    }
-
     private ItemStack createNavigationItem(Material material, String name) {
         ItemStack item = new ItemStack(material);
         ItemMeta meta = item.getItemMeta();
@@ -117,6 +121,10 @@ public class InventoryGUI {
             item.setItemMeta(meta);
         }
         return item;
+    }
+
+    public Inventory getInventory() {
+        return inventory;
     }
 
     public interface ClickAction {

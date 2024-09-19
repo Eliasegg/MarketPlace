@@ -10,6 +10,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class InventoryGUIListener implements Listener {
+
     private static final Map<String, InventoryGUI> activeGUIs = new HashMap<>();
 
     public static void registerGUI(String title, InventoryGUI gui) {
@@ -29,11 +30,11 @@ public class InventoryGUIListener implements Listener {
         if (clickedInventory == null) return;
         
         String inventoryTitle = event.getView().getTitle();
-        InventoryGUI gui = activeGUIs.get(inventoryTitle.split(" - Page ")[0]);
+        InventoryGUI gui = activeGUIs.get(inventoryTitle);
         
         if (gui != null) {
             event.setCancelled(true);
-            gui.handleClick(player, event.getSlot(), clickedInventory);
+            gui.handleClick(player, event.getSlot());
         }
     }
 }
