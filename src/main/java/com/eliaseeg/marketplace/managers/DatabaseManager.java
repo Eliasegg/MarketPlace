@@ -1,4 +1,4 @@
-package com.eliaseeg.marketplace.database;
+package com.eliaseeg.marketplace.managers;
 
 import com.mongodb.ConnectionString;
 import com.mongodb.MongoClientSettings;

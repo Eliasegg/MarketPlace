@@ -1,12 +1,13 @@
 package com.eliaseeg.marketplace;
 
-import com.eliaseeg.marketplace.database.DatabaseManager;
+import com.eliaseeg.marketplace.managers.DatabaseManager;
 import com.eliaseeg.marketplace.utils.inventorygui.InventoryGUIListener;
 import com.eliaseeg.marketplace.utils.DiscordWebhook;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.plugin.RegisteredServiceProvider;
 import net.milkbowl.vault.economy.Economy;
 import com.eliaseeg.marketplace.commands.*;
+import com.eliaseeg.marketplace.managers.ItemMarketplaceManager;
 
 public final class MarketPlace extends JavaPlugin {
 
@@ -14,6 +15,7 @@ public final class MarketPlace extends JavaPlugin {
     private DatabaseManager databaseManager;
     private DiscordWebhook discordWebhook;
     private Economy economy;
+    private ItemMarketplaceManager itemMarketplaceManager;
 
     @Override
     public void onEnable() {
@@ -39,6 +41,9 @@ public final class MarketPlace extends JavaPlugin {
         this.getCommand("transactions").setExecutor(new TransactionsCommand());
 
         getServer().getPluginManager().registerEvents(new InventoryGUIListener(), this);
+
+        this.itemMarketplaceManager = new ItemMarketplaceManager();
+        this.itemMarketplaceManager.loadItemListings();
     }
 
     private boolean setupEconomy() {
@@ -74,5 +79,9 @@ public final class MarketPlace extends JavaPlugin {
 
     public Economy getEconomy() {
         return economy;
+    }
+
+    public ItemMarketplaceManager getItemMarketplaceManager() {
+        return itemMarketplaceManager;
     }
 }

@@ -41,30 +41,28 @@ public class MarketplaceCommand implements CommandExecutor {
     }
 
     private void openMarketplace(Player player) {
-        MarketPlace.getInstance().getDatabaseManager().getAllItemListings(listings -> {
-            InventoryGUI gui = new InventoryGUI("Marketplace", 6);
-            InventoryGUIListener.registerGUI("Marketplace", gui);
+        List<ItemListing> listings = MarketPlace.getInstance().getItemMarketplaceManager().getAllListings();
+        InventoryGUI gui = new InventoryGUI("Marketplace", 6);
+        InventoryGUIListener.registerGUI("Marketplace", gui);
 
-            for (int i = 0; i < listings.size(); i++) {
-                ItemListing listing = listings.get(i);
-                ItemStack displayItem = listing.getItem().clone();
-                ItemMeta meta = displayItem.getItemMeta();
-                if (meta != null) {
-                    List<String> lore = meta.getLore() != null ? meta.getLore() : new ArrayList<>();
-                    lore.add("");
-                    lore.add("----------------");
-                    lore.add("Price: " + listing.getPrice());
-                    lore.add("Seller: " + Bukkit.getOfflinePlayer(listing.getSellerUUID()).getName());
-                    lore.add("----------------");
-                    lore.add("Click to purchase");
-                    meta.setLore(lore);
-                    displayItem.setItemMeta(meta);
-                }
-                gui.setItem(i, displayItem, p -> openConfirmationGUI(p, listing));
+        for (ItemListing listing : listings) {
+            ItemStack displayItem = listing.getItem().clone();
+            ItemMeta meta = displayItem.getItemMeta();
+            if (meta != null) {
+                List<String> lore = meta.getLore() != null ? meta.getLore() : new ArrayList<>();
+                lore.add("");
+                lore.add("----------------");
+                lore.add("Price: " + listing.getPrice());
+                lore.add("Seller: " + Bukkit.getOfflinePlayer(listing.getSellerUUID()).getName());
+                lore.add("----------------");
+                lore.add("Click to purchase");
+                meta.setLore(lore);
+                displayItem.setItemMeta(meta);
             }
+            gui.addItem(displayItem, p -> openConfirmationGUI(p, listing));
+        }
 
-            gui.open(player);
-        });
+        gui.open(player);
     }
 
     private void openConfirmationGUI(Player player, ItemListing listing) {
@@ -73,7 +71,6 @@ public class MarketplaceCommand implements CommandExecutor {
 
         if (!economy.has(player, price)) {
             player.sendMessage("You don't have enough money to purchase this item.");
-            openMarketplace(player);
             return;
         }
 
@@ -107,6 +104,7 @@ public class MarketplaceCommand implements CommandExecutor {
 
         MarketPlace.getInstance().getDatabaseManager().removeItemListing(listing.getItemId(), success -> {
             if (success) {
+                MarketPlace.getInstance().getItemMarketplaceManager().removeItemListing(listing.getItemId());
                 economy.withdrawPlayer(player, price);
                 OfflinePlayer seller = Bukkit.getOfflinePlayer(listing.getSellerUUID());
                 economy.depositPlayer(seller, price);

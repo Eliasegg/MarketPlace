@@ -17,7 +17,6 @@ import net.milkbowl.vault.economy.Economy;
 import org.bukkit.OfflinePlayer;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 public class BlackMarketCommand implements CommandExecutor {
@@ -42,36 +41,26 @@ public class BlackMarketCommand implements CommandExecutor {
     }
 
     private void openBlackMarket(Player player) {
-        MarketPlace.getInstance().getDatabaseManager().getAllItemListings(allListings -> {
-            InventoryGUI gui = new InventoryGUI("Black Market", 3);
-            InventoryGUIListener.registerGUI("Black Market", gui);
+        List<ItemListing> blackMarketListings = MarketPlace.getInstance().getItemMarketplaceManager().getBlackMarketListings(5);
+        InventoryGUI gui = new InventoryGUI("Black Market", 3);
+        InventoryGUIListener.registerGUI("Black Market", gui);
 
-            List<ItemListing> blackMarketListings = new ArrayList<>();
-
-            Collections.shuffle(allListings);
-            for (int i = 0; i < Math.min(5, allListings.size()); i++) {
-                ItemListing original = allListings.get(i);
-                ItemListing discounted = new ItemListing(original.getItem(), original.getPrice() * 0.5, original.getSellerUUID());
-                blackMarketListings.add(discounted);
+        for (ItemListing original : blackMarketListings) {
+            ItemListing discounted = new ItemListing(original.getItem(), original.getPrice() * 0.5, original.getSellerUUID());
+            ItemStack displayItem = discounted.getItem().clone();
+            ItemMeta meta = displayItem.getItemMeta();
+            if (meta != null) {
+                List<String> lore = meta.getLore() != null ? meta.getLore() : new ArrayList<>();
+                lore.add("Discounted Price: " + discounted.getPrice());
+                lore.add("Original Price: " + original.getPrice());
+                lore.add("Click to purchase");
+                meta.setLore(lore);
+                displayItem.setItemMeta(meta);
             }
+            gui.addItem(displayItem, p -> openConfirmationGUI(p, discounted));
+        }
 
-            for (int i = 0; i < blackMarketListings.size(); i++) {
-                ItemListing listing = blackMarketListings.get(i);
-                ItemStack displayItem = listing.getItem().clone();
-                ItemMeta meta = displayItem.getItemMeta();
-                if (meta != null) {
-                    List<String> lore = meta.getLore() != null ? meta.getLore() : new ArrayList<>();
-                    lore.add("Discounted Price: " + listing.getPrice());
-                    lore.add("Original Price: " + (listing.getPrice() * 2));
-                    lore.add("Click to purchase");
-                    meta.setLore(lore);
-                    displayItem.setItemMeta(meta);
-                }
-                gui.setItem(i, displayItem, p -> openConfirmationGUI(p, listing));
-            }
-
-            gui.open(player);
-        });
+        gui.open(player);
     }
 
     private void openConfirmationGUI(Player player, ItemListing listing) {
@@ -80,7 +69,6 @@ public class BlackMarketCommand implements CommandExecutor {
 
         if (!economy.has(player, discountedPrice)) {
             player.sendMessage("You don't have enough money to purchase this item.");
-            openBlackMarket(player);
             return;
         }
 
@@ -115,6 +103,7 @@ public class BlackMarketCommand implements CommandExecutor {
 
         MarketPlace.getInstance().getDatabaseManager().removeItemListing(listing.getItemId(), success -> {
             if (success) {
+                MarketPlace.getInstance().getItemMarketplaceManager().removeItemListing(listing.getItemId());
                 economy.withdrawPlayer(player, discountedPrice);
                 OfflinePlayer seller = Bukkit.getOfflinePlayer(listing.getSellerUUID());
                 economy.depositPlayer(seller, originalPrice); // 2x reimbursement

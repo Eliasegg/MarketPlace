@@ -50,6 +50,7 @@ public class SellCommand implements CommandExecutor {
             if (success) {
                 player.getInventory().setItemInMainHand(null);
                 player.sendMessage("Your item has been listed in the marketplace for " + price + ".");
+                MarketPlace.getInstance().getItemMarketplaceManager().addItemListing(listing);
             } else {
                 player.sendMessage("Failed to list your item. Please try again later.");
             }

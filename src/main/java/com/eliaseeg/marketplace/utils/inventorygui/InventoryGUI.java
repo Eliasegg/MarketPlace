@@ -27,18 +27,24 @@ public class InventoryGUI {
         addPage();
     }
 
-    public void addItem(ItemStack item) {
+    public void addItem(ItemStack item, ClickAction action) {
         Inventory currentPage = getCurrentPage();
-        if (currentPage.firstEmpty() == -1) {
+        int firstEmpty = currentPage.firstEmpty();
+        if (firstEmpty == -1 || firstEmpty >= (rows - 1) * 9) {
             addPage();
             currentPage = getCurrentPage();
+            firstEmpty = currentPage.firstEmpty();
         }
-        currentPage.addItem(item);
+        currentPage.setItem(firstEmpty, item);
+        if (action != null) {
+            int globalSlot = (pages.size() - 1) * ((rows - 1) * 9) + firstEmpty;
+            actions.put(globalSlot, action);
+        }
     }
 
     public void setItem(int slot, ItemStack item, ClickAction action) {
-        int page = slot / (rows * 9);
-        int pageSlot = slot % (rows * 9);
+        int page = slot / ((rows - 1) * 9);
+        int pageSlot = slot % ((rows - 1) * 9);
         while (pages.size() <= page) {
             addPage();
         }
@@ -56,32 +62,46 @@ public class InventoryGUI {
         int page = pages.indexOf(clickedInventory);
         if (page == -1) return;
 
-        int globalSlot = page * (rows * 9) + slot;
+        if (slot >= (rows - 1) * 9) {
+            if (slot == rows * 9 - 9 && page > 0) {
+                player.openInventory(pages.get(page - 1));
+            } else if (slot == rows * 9 - 1 && page < pages.size() - 1) {
+                player.openInventory(pages.get(page + 1));
+            }
+            return;
+        }
+
+        int globalSlot = page * ((rows - 1) * 9) + slot;
         ClickAction action = actions.get(globalSlot);
         if (action != null) {
             action.onClick(player);
-        }
-
-        if (slot == rows * 9 - 9 && page > 0) {
-            player.openInventory(pages.get(page - 1));
-        } else if (slot == rows * 9 - 1 && page < pages.size() - 1) {
-            player.openInventory(pages.get(page + 1));
         }
     }
 
     private void addPage() {
         Inventory page = Bukkit.createInventory(null, rows * 9, title + " - Page " + (pages.size() + 1));
+        fillBottomRow(page);
         if (!pages.isEmpty()) {
             page.setItem(rows * 9 - 9, createNavigationItem(Material.ARROW, "Previous Page"));
         }
-        if (!title.startsWith("Confirm")) {
-            page.setItem(rows * 9 - 1, createNavigationItem(Material.ARROW, "Next Page"));
-        }
+        page.setItem(rows * 9 - 1, createNavigationItem(Material.ARROW, "Next Page"));
         pages.add(page);
         
-        if (pages.size() > 1 && !title.startsWith("Confirm")) {
+        if (pages.size() > 1) {
             Inventory previousPage = pages.get(pages.size() - 2);
             previousPage.setItem(rows * 9 - 1, createNavigationItem(Material.ARROW, "Next Page"));
+        }
+    }
+
+    private void fillBottomRow(Inventory inventory) {
+        ItemStack filler = new ItemStack(Material.WHITE_STAINED_GLASS_PANE);
+        ItemMeta meta = filler.getItemMeta();
+        if (meta != null) {
+            meta.setDisplayName(" ");
+            filler.setItemMeta(meta);
+        }
+        for (int i = (rows - 1) * 9; i < rows * 9; i++) {
+            inventory.setItem(i, filler);
         }
     }
 
