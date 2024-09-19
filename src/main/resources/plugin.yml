@@ -23,15 +23,23 @@ commands:
     permission: marketplace.history
 
 permissions:
+  marketplace.*:
+    description: Gives access to all marketplace commands
+    children:
+      marketplace.sell: true
+      marketplace.view: true
+      marketplace.blackmarket: true
+      marketplace.history: true
+    default: op
   marketplace.sell:
     description: Allows players to sell items in the marketplace
-    default: true
+    default: false
   marketplace.view:
     description: Allows players to view the marketplace
-    default: true
+    default: false
   marketplace.blackmarket:
     description: Allows players to access the black market
-    default: op
+    default: false
   marketplace.history:
     description: Allows players to view their transaction history
-    default: true
+    default: false
