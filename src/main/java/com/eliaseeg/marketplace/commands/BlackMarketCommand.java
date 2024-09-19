@@ -65,6 +65,11 @@ public class BlackMarketCommand implements CommandExecutor {
     }
 
     private void openConfirmationGUI(Player player, ItemListing listing) {
+        if (player.getUniqueId().equals(listing.getSellerUUID())) {
+            player.sendMessage("You cannot purchase your own item.");
+            return;
+        }
+
         Economy economy = MarketPlace.getInstance().getEconomy();
         double discountedPrice = listing.getPrice();
 
@@ -96,6 +101,7 @@ public class BlackMarketCommand implements CommandExecutor {
     private void purchaseItem(Player player, ItemListing listing) {
         if (!CooldownManager.checkCooldown(player.getUniqueId())) {
             player.sendMessage("Please wait before making another purchase.");
+            player.closeInventory();
             return;
         }
 

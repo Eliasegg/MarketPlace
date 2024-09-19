@@ -67,6 +67,12 @@ public class MarketplaceCommand implements CommandExecutor {
     }
 
     private void openConfirmationGUI(Player player, ItemListing listing) {
+        if (player.getUniqueId().equals(listing.getSellerUUID())) {
+            player.sendMessage("You cannot purchase your own item.");
+            player.closeInventory();
+            return;
+        }
+
         Economy economy = MarketPlace.getInstance().getEconomy();
         double price = listing.getPrice();
 
