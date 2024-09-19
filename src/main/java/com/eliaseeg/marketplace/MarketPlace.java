@@ -32,7 +32,12 @@ public final class MarketPlace extends JavaPlugin {
         }
 
         databaseManager = new DatabaseManager();
-        databaseManager.connect();
+        if (!databaseManager.connect()) {
+            getLogger().severe("Failed to connect to MongoDB. Please check your configuration.");
+            getLogger().severe("Disabling MarketPlace plugin.");
+            getServer().getPluginManager().disablePlugin(this);
+            return;
+        }
         databaseManager.createDatabase();
 
         String webhookUrl = getConfig().getString("discord.webhook_url");

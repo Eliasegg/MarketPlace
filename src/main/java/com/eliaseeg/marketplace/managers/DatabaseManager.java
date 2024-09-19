@@ -28,21 +28,31 @@ public class DatabaseManager {
     private MongoCollection<Document> playerDataCollection;
     private MongoCollection<Document> itemListingsCollection;
 
-    public void connect() {
-        String uri = MarketPlace.getInstance().getConfig().getString("database.uri", "mongodb://localhost:27017");
-        String databaseName = MarketPlace.getInstance().getConfig().getString("database.name", "marketplace");
+    public boolean connect() {
+        try {
+            String uri = MarketPlace.getInstance().getConfig().getString("database.uri", "mongodb://localhost:27017");
+            String databaseName = MarketPlace.getInstance().getConfig().getString("database.name", "marketplace");
 
-        ConnectionString connectionString = new ConnectionString(uri);
-        MongoClientSettings settings = MongoClientSettings.builder()
-                .applyConnectionString(connectionString)
-                .serverApi(ServerApi.builder()
-                        .version(ServerApiVersion.V1)
-                        .build())
-                .retryWrites(true)
-                .retryReads(true)
-                .build();
-        mongoClient = MongoClients.create(settings);
-        database = mongoClient.getDatabase(databaseName);
+            ConnectionString connectionString = new ConnectionString(uri);
+            MongoClientSettings settings = MongoClientSettings.builder()
+                    .applyConnectionString(connectionString)
+                    .serverApi(ServerApi.builder()
+                            .version(ServerApiVersion.V1)
+                            .build())
+                    .retryWrites(true)
+                    .retryReads(true)
+                    .build();
+            mongoClient = MongoClients.create(settings);
+            database = mongoClient.getDatabase(databaseName);
+            
+            // Test the connection
+            database.runCommand(new Document("ping", 1));
+            
+            return true;
+        } catch (Exception e) {
+            MarketPlace.getInstance().getLogger().severe("Failed to connect to MongoDB: " + e.getMessage());
+            return false;
+        }
     }
 
     public void createDatabase() {
